@@ -1,19 +1,15 @@
 /* Copyright (C) 2013-2016, The Regents of The University of Michigan.
 All rights reserved.
-
 This software was developed in the APRIL Robotics Lab under the
 direction of Edwin Olson, ebolson@umich.edu. This software may be
 available under alternative licensing terms; contact the address above.
-
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
-
 1. Redistributions of source code must retain the above copyright notice, this
    list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -24,7 +20,6 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the Regents of The University of Michigan.
@@ -89,7 +84,6 @@ zhash_t *zhash_create_capacity(size_t keysz, size_t valuesz,
     zh->entrysz = 1 + zh->keysz + zh->valuesz;
 
     zh->entries = calloc(zh->nentries, zh->entrysz);
-    zh->nentries = nentries;
 
     return zh;
 }
@@ -184,11 +178,11 @@ int zhash_put(zhash_t *zh, const void *key, const void *value, void *oldkey, voi
                                                  zh->hash, zh->equals,
                                                  zh->size);
 
-        for (int entry_idx = 0; entry_idx < zh->nentries; entry_idx++) {
+        for (int idx = 0; idx < zh->nentries; idx++) {
 
-            if (zh->entries[entry_idx * zh->entrysz]) {
-                void *this_key = &zh->entries[entry_idx * zh->entrysz + 1];
-                void *this_value = &zh->entries[entry_idx * zh->entrysz + 1 + zh->keysz];
+            if (zh->entries[idx * zh->entrysz]) {
+                void *this_key = &zh->entries[idx * zh->entrysz + 1];
+                void *this_value = &zh->entries[idx * zh->entrysz + 1 + zh->keysz];
                 if (zhash_put(newhash, this_key, this_value, NULL, NULL))
                     assert(0); // shouldn't already be present.
             }
@@ -230,13 +224,14 @@ int zhash_remove(zhash_t *zh, const void *key, void *old_key, void *old_value)
 
                 if (zh->entries[entry_idx * zh->entrysz]) {
                     // completely remove this entry
-                    char tmp[zh->entrysz];
+                    char *tmp = malloc(sizeof(char)*zh->entrysz);
                     memcpy(tmp, &zh->entries[entry_idx * zh->entrysz], zh->entrysz);
                     zh->entries[entry_idx * zh->entrysz] = 0;
                     zh->size--;
                     // reinsert it
                     if (zhash_put(zh, &tmp[1], &tmp[1+zh->keysz], NULL, NULL))
                         assert(0);
+                    free(tmp);
                 } else {
                     break;
                 }
@@ -341,7 +336,7 @@ void zhash_iterator_remove(zhash_iterator_t *zit)
     int entry_idx = (zit->last_entry + 1) & (zh->nentries - 1);
     while (zh->entries[entry_idx *zh->entrysz]) {
         // completely remove this entry
-        char tmp[zh->entrysz];
+        char *tmp = malloc(sizeof(char)*zh->entrysz);
         memcpy(tmp, &zh->entries[entry_idx * zh->entrysz], zh->entrysz);
         zh->entries[entry_idx * zh->entrysz] = 0;
         zh->size--;
@@ -349,6 +344,7 @@ void zhash_iterator_remove(zhash_iterator_t *zit)
         // reinsert it
         if (zhash_put(zh, &tmp[1], &tmp[1+zh->keysz], NULL, NULL))
             assert(0);
+        free(tmp);
 
         entry_idx = (entry_idx + 1) & (zh->nentries - 1);
     }
@@ -356,7 +352,7 @@ void zhash_iterator_remove(zhash_iterator_t *zit)
     zit->last_entry--;
 }
 
-void zhash_map_keys(zhash_t *zh, void (*f)())
+void zhash_map_keys(zhash_t *zh, void (*f)(void*))
 {
     assert(zh != NULL);
     if (f == NULL)
@@ -372,7 +368,7 @@ void zhash_map_keys(zhash_t *zh, void (*f)())
     }
 }
 
-void zhash_vmap_keys(zhash_t * zh, void (*f)())
+void zhash_vmap_keys(zhash_t * zh, void (*f)(void*))
 {
     assert(zh != NULL);
     if (f == NULL)
@@ -389,7 +385,7 @@ void zhash_vmap_keys(zhash_t * zh, void (*f)())
     }
 }
 
-void zhash_map_values(zhash_t * zh, void (*f)())
+void zhash_map_values(zhash_t * zh, void (*f)(void*))
 {
     assert(zh != NULL);
     if (f == NULL)
@@ -404,7 +400,7 @@ void zhash_map_values(zhash_t * zh, void (*f)())
     }
 }
 
-void zhash_vmap_values(zhash_t * zh, void (*f)())
+void zhash_vmap_values(zhash_t * zh, void (*f)(void*))
 {
     assert(zh != NULL);
     if (f == NULL)
@@ -543,14 +539,15 @@ uint32_t zhash_str_hash(const void *_a)
 
     char *a = * (char**)_a;
 
-    int32_t hash = 0;
+    uint32_t hash = 0;
     while (*a != 0) {
-        hash = (hash << 7) + (hash >> 23);
-        hash += *a;
+        // optimization of hash x FNV_prime
+        hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+        hash ^= *a;
         a++;
     }
 
-    return (uint32_t) hash;
+    return hash;
 }
 
 

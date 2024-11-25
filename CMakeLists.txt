@@ -1,55 +1,54 @@
-# Sets the minimum version of CMake required to build your native library.
-# This ensures that a certain set of CMake features is available to
-# your build.
+# For more information about using CMake with Android Studio, read the
+# documentation: https://d.android.com/studio/projects/add-native-code.html.
+# For more examples on how to use CMake, see https://github.com/android/ndk-samples.
 
-cmake_minimum_required(VERSION 3.4.1)
-project(Project)
+# Sets the minimum CMake version required for this project.
+cmake_minimum_required(VERSION 3.22.1)
 
-# Specifies a library name, specifies whether the library is STATIC or
-# SHARED, and provides relative paths to the source code. You can
-# define multiple libraries by adding multiple add.library() commands,
-# and CMake builds them for you. When you build your app, Gradle
-# automatically packages shared libraries with your APK.
+#Set the project name
+project(AprilTagDetectionLibrary C)
 
-add_library(# Specifies the name of the library.
-            apriltag
+set(CMAKE_SOURCE "src/main")
 
-            # Sets the library as a shared library.
-            SHARED
+#Include the apriltag directory for header files
+include_directories(${CMAKE_SOURCE}/apriltag)
 
-            # Provides a relative path to your source file(s).
-            src/main/apriltag/apriltag.c
-            src/main/apriltag/apriltag_jni.c
-            src/main/apriltag/apriltag_quad_thresh.c
-            src/main/apriltag/common/g2d.c
-            src/main/apriltag/common/getopt.c
-            src/main/apriltag/common/homography.c
-            src/main/apriltag/common/image_f32.c
-            src/main/apriltag/common/image_u8.c
-            src/main/apriltag/common/image_u8x3.c
-            src/main/apriltag/common/matd.c
-            src/main/apriltag/common/pnm.c
-            src/main/apriltag/common/string_util.c
-            src/main/apriltag/common/svd22.c
-            src/main/apriltag/common/time_util.c
-            src/main/apriltag/common/unionfind.c
-            src/main/apriltag/common/workerpool.c
-            src/main/apriltag/common/zarray.c
-            src/main/apriltag/common/zhash.c
-            src/main/apriltag/common/zmaxheap.c
-            src/main/apriltag/tag16h5.c
-            src/main/apriltag/tag25h7.c
-            src/main/apriltag/tag25h9.c
-            src/main/apriltag/tag36artoolkit.c
-            src/main/apriltag/tag36h10.c
-            src/main/apriltag/tag36h11.c
-            )
+#Collect all '.c' files in the apriltag directory
+file(GLOB_RECURSE APRILTAG_SRC "${CMAKE_SOURCE}/apriltag/*.c")
 
-STRING(REPLACE "-O0" "-O4" CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
-STRING(REPLACE "-O2" "-O4" CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
+message(STATUS   "SOURCE DIR:   ${CMAKE_SOURCE}")
+message(STATUS  "APRILTAG_SRC: ${APRILTAG_SRC}")
 
-include_directories(src/main/apriltag/)
+#Add apriltag_jni.c to the source files
+set(SOURCES ${APRILTAG_SRC})
 
-find_library(log-lib log)
-find_library(jnigraphics-lib jnigraphics)
-target_link_libraries(apriltag ${log-lib} ${jnigraphics-lib})
+message(STATUS  "SOURCES: ${SOURCES}")
+
+set(CMAKE_C_STANDARD 99)
+
+#set(CMAKE_C_COMPILER /usr/bin/clang)
+
+set(LIBRARY_NAME  "apriltag")
+
+#Define the native library
+add_library(
+        ${LIBRARY_NAME}  #name of the library
+        SHARED                 #Shared library
+        # List C/C++ source files with relative paths to this CMakeLists.txt.
+        ${SOURCES})
+
+find_library(
+        log-lib  #Variable to store the log library
+        log      #Android NDK log library
+)
+
+find_library(
+        jnigraphics-lib
+        jnigraphics
+)
+
+target_link_libraries(
+        ${LIBRARY_NAME}
+        ${log-lib}
+        ${jnigraphics-lib}
+)

@@ -1,19 +1,15 @@
 /* Copyright (C) 2013-2016, The Regents of The University of Michigan.
 All rights reserved.
-
 This software was developed in the APRIL Robotics Lab under the
 direction of Edwin Olson, ebolson@umich.edu. This software may be
 available under alternative licensing terms; contact the address above.
-
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
-
 1. Redistributions of source code must retain the above copyright notice, this
    list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -24,7 +20,6 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the Regents of The University of Michigan.
@@ -38,6 +33,14 @@ either expressed or implied, of the Regents of The University of Michigan.
 #include <stdint.h>
 
 #include "zmaxheap.h"
+#include "debug_print.h"
+
+#ifdef _WIN32
+static inline long int random(void)
+{
+        return rand();
+}
+#endif
 
 //                 0
 //         1               2
@@ -70,10 +73,11 @@ static inline void swap_default(zmaxheap_t *heap, int a, int b)
     heap->values[a] = heap->values[b];
     heap->values[b] = t;
 
-    char tmp[heap->el_sz];
+    char *tmp = malloc(sizeof(char)*heap->el_sz);
     memcpy(tmp, &heap->data[a*heap->el_sz], heap->el_sz);
     memcpy(&heap->data[a*heap->el_sz], &heap->data[b*heap->el_sz], heap->el_sz);
     memcpy(&heap->data[b*heap->el_sz], tmp, heap->el_sz);
+    free(tmp);
 }
 
 static inline void swap_pointer(zmaxheap_t *heap, int a, int b)
@@ -163,7 +167,7 @@ void zmaxheap_add(zmaxheap_t *heap, void *p, float v)
     }
 }
 
-void zmaxheap_vmap(zmaxheap_t *heap, void (*f)())
+void zmaxheap_vmap(zmaxheap_t *heap, void (*f)(void*))
 {
     assert(heap != NULL);
     assert(f != NULL);
@@ -173,8 +177,7 @@ void zmaxheap_vmap(zmaxheap_t *heap, void (*f)())
         void *p = NULL;
         memcpy(&p, &heap->data[idx*heap->el_sz], heap->el_sz);
         if (p == NULL) {
-            printf("Warning: zmaxheap_vmap item %d is NULL\n", idx);
-            fflush(stdout);
+            debug_print("Warning: zmaxheap_vmap item %d is NULL\n", idx);
         }
         f(p);
     }
@@ -317,7 +320,7 @@ static void maxheapify(zmaxheap_t *heap, int parent)
 
     if (betterchild != parent) {
         heap->swap(heap, parent, betterchild);
-        return maxheapify(heap, betterchild);
+        maxheapify(heap, betterchild);
     }
 }
 
@@ -358,7 +361,7 @@ void zmaxheap_test()
 {
     int cap = 10000;
     int sz = 0;
-    int32_t *vals = calloc(sizeof(int32_t), cap);
+    int32_t *vals = calloc(cap, sizeof(int32_t));
 
     zmaxheap_t *heap = zmaxheap_create(sizeof(int32_t));
 
@@ -372,7 +375,6 @@ void zmaxheap_test()
             // add a value
             int32_t v = (int32_t) (random() / 1000);
             float fv = v;
-            assert(v == fv);
 
             vals[sz] = v;
             zmaxheap_add(heap, &v, fv);
@@ -391,11 +393,12 @@ void zmaxheap_test()
             }
 
 
-            int32_t outv;
-            float outfv;
+            int32_t outv = 0;
+            float outfv = 0;
             int res = zmaxheap_remove_max(heap, &outv, &outfv);
             if (sz == 0) {
                 assert(res == 0);
+                (void)res;
             } else {
 //                printf("%d %d %d %f\n", sz, maxv, outv, outfv);
                 assert(outv == outfv);

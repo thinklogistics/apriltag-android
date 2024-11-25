@@ -26,89 +26,107 @@ either expressed or implied, of the Regents of The University of Michigan.
 */
 
 #include <stdlib.h>
-#include "tag16h5.h"
+#include "tagCircle21h7.h"
 
-static uint64_t codedata[30] = {
-   0x00000000000027c8UL,
-   0x00000000000031b6UL,
-   0x0000000000003859UL,
-   0x000000000000569cUL,
-   0x0000000000006c76UL,
-   0x0000000000007ddbUL,
-   0x000000000000af09UL,
-   0x000000000000f5a1UL,
-   0x000000000000fb8bUL,
-   0x0000000000001cb9UL,
-   0x00000000000028caUL,
-   0x000000000000e8dcUL,
-   0x0000000000001426UL,
-   0x0000000000005770UL,
-   0x0000000000009253UL,
-   0x000000000000b702UL,
-   0x000000000000063aUL,
-   0x0000000000008f34UL,
-   0x000000000000b4c0UL,
-   0x00000000000051ecUL,
-   0x000000000000e6f0UL,
-   0x0000000000005fa4UL,
-   0x000000000000dd43UL,
-   0x0000000000001aaaUL,
-   0x000000000000e62fUL,
-   0x0000000000006dbcUL,
-   0x000000000000b6ebUL,
-   0x000000000000de10UL,
-   0x000000000000154dUL,
-   0x000000000000b57aUL,
+static uint64_t codedata[38] = {
+   0x0000000000157863UL,
+   0x0000000000047e28UL,
+   0x00000000001383edUL,
+   0x000000000000953cUL,
+   0x00000000000da68bUL,
+   0x00000000001cac50UL,
+   0x00000000000bb215UL,
+   0x000000000016ceeeUL,
+   0x000000000005d4b3UL,
+   0x00000000001ff751UL,
+   0x00000000000efd16UL,
+   0x0000000000072b3eUL,
+   0x0000000000163103UL,
+   0x0000000000106e56UL,
+   0x00000000001996b9UL,
+   0x00000000000c0234UL,
+   0x00000000000624d2UL,
+   0x00000000001fa985UL,
+   0x00000000000344a5UL,
+   0x00000000000762fbUL,
+   0x000000000019e92bUL,
+   0x0000000000043755UL,
+   0x000000000001a4f4UL,
+   0x000000000010fad8UL,
+   0x0000000000001b52UL,
+   0x000000000017e59fUL,
+   0x00000000000e6f70UL,
+   0x00000000000ed47aUL,
+   0x00000000000c9931UL,
+   0x0000000000014df2UL,
+   0x00000000000a06f1UL,
+   0x00000000000e5041UL,
+   0x000000000012ec03UL,
+   0x000000000016724eUL,
+   0x00000000000af1a5UL,
+   0x000000000008a8acUL,
+   0x0000000000015b39UL,
+   0x00000000001ec1e3UL,
 };
-apriltag_family_t *tag16h5_create()
+apriltag_family_t *tagCircle21h7_create()
 {
    apriltag_family_t *tf = calloc(1, sizeof(apriltag_family_t));
-   tf->name = strdup("tag16h5");
-   tf->h = 5;
-   tf->ncodes = 30;
+   tf->name = strdup("tagCircle21h7");
+   tf->h = 7;
+   tf->ncodes = 38;
    tf->codes = codedata;
-   tf->nbits = 16;
-   tf->bit_x = calloc(16, sizeof(uint32_t));
-   tf->bit_y = calloc(16, sizeof(uint32_t));
+   tf->nbits = 21;
+   tf->bit_x = calloc(21, sizeof(uint32_t));
+   tf->bit_y = calloc(21, sizeof(uint32_t));
    tf->bit_x[0] = 1;
-   tf->bit_y[0] = 1;
+   tf->bit_y[0] = -2;
    tf->bit_x[1] = 2;
-   tf->bit_y[1] = 1;
+   tf->bit_y[1] = -2;
    tf->bit_x[2] = 3;
-   tf->bit_y[2] = 1;
-   tf->bit_x[3] = 2;
-   tf->bit_y[3] = 2;
-   tf->bit_x[4] = 4;
+   tf->bit_y[2] = -2;
+   tf->bit_x[3] = 1;
+   tf->bit_y[3] = 1;
+   tf->bit_x[4] = 2;
    tf->bit_y[4] = 1;
-   tf->bit_x[5] = 4;
-   tf->bit_y[5] = 2;
-   tf->bit_x[6] = 4;
-   tf->bit_y[6] = 3;
-   tf->bit_x[7] = 3;
-   tf->bit_y[7] = 2;
-   tf->bit_x[8] = 4;
-   tf->bit_y[8] = 4;
+   tf->bit_x[5] = 6;
+   tf->bit_y[5] = 1;
+   tf->bit_x[6] = 6;
+   tf->bit_y[6] = 2;
+   tf->bit_x[7] = 6;
+   tf->bit_y[7] = 3;
+   tf->bit_x[8] = 3;
+   tf->bit_y[8] = 1;
    tf->bit_x[9] = 3;
-   tf->bit_y[9] = 4;
-   tf->bit_x[10] = 2;
-   tf->bit_y[10] = 4;
-   tf->bit_x[11] = 3;
-   tf->bit_y[11] = 3;
+   tf->bit_y[9] = 2;
+   tf->bit_x[10] = 3;
+   tf->bit_y[10] = 6;
+   tf->bit_x[11] = 2;
+   tf->bit_y[11] = 6;
    tf->bit_x[12] = 1;
-   tf->bit_y[12] = 4;
-   tf->bit_x[13] = 1;
+   tf->bit_y[12] = 6;
+   tf->bit_x[13] = 3;
    tf->bit_y[13] = 3;
-   tf->bit_x[14] = 1;
-   tf->bit_y[14] = 2;
-   tf->bit_x[15] = 2;
+   tf->bit_x[14] = 2;
+   tf->bit_y[14] = 3;
+   tf->bit_x[15] = -2;
    tf->bit_y[15] = 3;
-   tf->width_at_border = 6;
-   tf->total_width = 8;
-   tf->reversed_border = false;
+   tf->bit_x[16] = -2;
+   tf->bit_y[16] = 2;
+   tf->bit_x[17] = -2;
+   tf->bit_y[17] = 1;
+   tf->bit_x[18] = 1;
+   tf->bit_y[18] = 3;
+   tf->bit_x[19] = 1;
+   tf->bit_y[19] = 2;
+   tf->bit_x[20] = 2;
+   tf->bit_y[20] = 2;
+   tf->width_at_border = 5;
+   tf->total_width = 9;
+   tf->reversed_border = true;
    return tf;
 }
 
-void tag16h5_destroy(apriltag_family_t *tf)
+void tagCircle21h7_destroy(apriltag_family_t *tf)
 {
    free(tf->bit_x);
    free(tf->bit_y);

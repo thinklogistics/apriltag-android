@@ -1,22 +1,15 @@
 /* Copyright (C) 2013-2016, The Regents of The University of Michigan.
 All rights reserved.
-
 This software was developed in the APRIL Robotics Lab under the
 direction of Edwin Olson, ebolson@umich.edu. This software may be
 available under alternative licensing terms; contact the address above.
-
-An unlimited license is granted to use, adapt, modify, or embed the 2D
-barcodes into any medium.
-
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
-
 1. Redistributions of source code must retain the above copyright notice, this
    list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,24 +20,22 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the Regents of The University of Michigan.
 */
+#pragma once
 
-#ifndef _TAG25H7
-#define _TAG25H7
+#if !defined(NDEBUG) || defined(_DEBUG)
 
-#ifdef __cplusplus
-extern "C" {
+#include <string.h>
+#include <stdio.h>
+#define DEBUG 1
+
+#else
+#define DEBUG 0
 #endif
 
-apriltag_family_t *tag25h7_create();
-void tag25h7_destroy(apriltag_family_t *tf);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+#define debug_print(fmt, ...) \
+        do { if (DEBUG) fprintf(stderr, "%s:%d:%s(): " fmt, strrchr("/"__FILE__,'/')+1, \
+                                __LINE__, __func__, ##__VA_ARGS__); fflush(stderr);} while (0)

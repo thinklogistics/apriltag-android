@@ -56,16 +56,24 @@
     <string name="pref_title_tag_family">Tag family</string>
     <string-array name="pref_tag_family_list_titles">
         <item>tag36h11 (recommended)</item>
+        <item>tag52h13</item>
+        <item>tag49h12</item>
+        <item>tag48h12</item>
+        <item>tag41h12</item>
         <item>tag36h10</item>
         <item>tag25h9</item>
-        <item>tag25h7</item>
+        <item>tag21h7</item>
         <item>tag16h5</item>
     </string-array>
     <string-array name="pref_tag_family_list_values">
         <item>tag36h11</item>
+        <item>tag52h13</item>
+        <item>tag49h12</item>
+        <item>tag48h12</item>
+        <item>tag41h12</item>
         <item>tag36h10</item>
         <item>tag25h9</item>
-        <item>tag25h7</item>
+        <item>tag21h7</item>
         <item>tag16h5</item>
     </string-array>
 </resources>

@@ -4,12 +4,16 @@
 #include <android/log.h>
 
 #include "apriltag.h"
-#include "tag36h11.h"
-#include "tag36h10.h"
-#include "tag36artoolkit.h"
-#include "tag25h9.h"
-#include "tag25h7.h"
 #include "tag16h5.h"
+#include "tag25h9.h"
+#include "tag36h10.h"
+#include "tag36h11.h"
+
+#include "tagCircle21h7.h"
+#include "tagCircle49h12.h"
+#include "tagCustom48h12.h"
+#include "tagStandard41h12.h"
+#include "tagStandard52h13.h"
 
 static struct {
     apriltag_detector_t *td;
@@ -167,19 +171,31 @@ JNIEXPORT void JNICALL Java_edu_umich_eecs_april_apriltag_ApriltagNative_aprilta
     } else if (!strcmp(tfname, "tag36h10")) {
         state.tf = tag36h10_create();
         state.tf_destroy = tag36h10_destroy;
-    } else if (!strcmp(tfname, "tag36artoolkit")) {
-        state.tf = tag36artoolkit_create();
-        state.tf_destroy = tag36artoolkit_destroy;
-    } else if (!strcmp(tfname, "tag25h9")) {
-        state.tf = tag25h9_create();
-        state.tf_destroy = tag25h9_destroy;
-    } else if (!strcmp(tfname, "tag25h7")) {
-        state.tf = tag25h7_create();
-        state.tf_destroy = tag25h7_destroy;
-    } else if (!strcmp(tfname, "tag16h5")) {
+    }
+    else if (!strcmp(tfname, "tag16h5")) {
         state.tf = tag16h5_create();
         state.tf_destroy = tag16h5_destroy;
-    } else {
+    }  else if (!strcmp(tfname, "tag25h9")) {
+        state.tf = tag25h9_create();
+        state.tf_destroy = tag25h9_destroy;
+    }else if (!strcmp(tfname, "tag21h7")) {
+        state.tf = tagCircle21h7_create();
+        state.tf_destroy = tagCircle21h7_destroy;
+    }
+    else if (!strcmp(tfname, "tag48h12")) {
+        state.tf = tagCustom48h12_create();
+        state.tf_destroy = tagCustom48h12_destroy;
+    }else if (!strcmp(tfname, "tag41h12")) {
+        state.tf = tagStandard41h12_create();
+        state.tf_destroy = tagStandard41h12_destroy;
+    }else if (!strcmp(tfname, "tag49h12")) {
+        state.tf = tagCircle49h12_create();
+        state.tf_destroy = tagCircle49h12_destroy;
+    }
+    else if (!strcmp(tfname, "tag52h13")) {
+        state.tf = tagStandard52h13_create();
+        state.tf_destroy = tagStandard52h13_destroy;
+    }else {
         __android_log_print(ANDROID_LOG_ERROR, "apriltag_jni",
                             "invalid tag family: %s", tfname);
         (*env)->ReleaseStringUTFChars(env, _tfname, tfname);

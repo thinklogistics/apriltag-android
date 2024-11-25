@@ -1,22 +1,28 @@
 /* Copyright (C) 2013-2016, The Regents of The University of Michigan.
 All rights reserved.
-
 This software was developed in the APRIL Robotics Lab under the
 direction of Edwin Olson, ebolson@umich.edu. This software may be
 available under alternative licensing terms; contact the address above.
-
-This library is free software; you can redistribute it and/or
-modify it under the terms of the GNU Lesser General Public
-License as published by the Free Software Foundation; either
-version 2.1 of the License, or (at your option) any later version.
-
-This library is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with this library; if not, see <http://www.gnu.org/licenses/>.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+The views and conclusions contained in the software and documentation are those
+of the authors and should not be interpreted as representing official policies,
+either expressed or implied, of the Regents of The University of Michigan.
 */
 
 #include <stdio.h>
@@ -29,6 +35,7 @@ License along with this library; if not, see <http://www.gnu.org/licenses/>.
 
 #include "image_u8.h"
 #include "image_u8x3.h"
+#include "debug_print.h"
 
 // https://www.w3.org/Graphics/JPEG/itu-t81.pdf
 
@@ -89,7 +96,7 @@ static uint8_t mjpeg_dht[] = { // header
     0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0A,0x0B,
 
     /////////////////////////////////////////////////////////////
-    // chrominance DC coefficents
+    // chrominance DC coefficients
     // DC table 1
     0x01,
     // code lengths
@@ -416,7 +423,7 @@ static int pjpeg_decode_buffer(struct pjpeg_decode_state *pjd)
                             if (code_pos + ncodes > 0xffff)
                                 return PJPEG_ERR_DHT;
 
-                            for (int ci = 0; ci < ncodes; ci++) {
+                            for (unsigned int ci = 0; ci < ncodes; ci++) {
                                 pjd->huff_codes[htidx][code_pos].nbits = nbits;
                                 pjd->huff_codes[htidx][code_pos].code = code;
                                 code_pos++;
@@ -443,8 +450,7 @@ static int pjpeg_decode_buffer(struct pjpeg_decode_state *pjd)
                 uint8_t ns = bd_consume_bits(&bd, 8);
 
                 // for each component, what is the index into our pjd->components[] array?
-                uint8_t comp_idx[ns];
-                memset(comp_idx, 0, ns*sizeof(uint8_t));
+                uint8_t *comp_idx = calloc(ns, sizeof(uint8_t));
 
                 for (int i = 0; i < ns; i++) {
                     // component name
@@ -512,8 +518,7 @@ static int pjpeg_decode_buffer(struct pjpeg_decode_state *pjd)
 
 
                 // each component has its own DC prediction
-                int32_t dcpred[ns];
-                memset(dcpred, 0, sizeof(dcpred));
+                int32_t *dcpred = calloc(ns, sizeof(int32_t));
 
                 pjd->reset_count = 0;
 
@@ -545,16 +550,16 @@ static int pjpeg_decode_buffer(struct pjpeg_decode_state *pjd)
                                 printf("RST SYNC\n");
                             }
 
-                            int32_t marker = bd_consume_bits(&bd, 8);
+                            int32_t marker_32 = bd_consume_bits(&bd, 8);
 
-//                            printf("%04x: RESET? %02x\n", *bd.inpos,  marker);
-                            if (marker != (0xd0 + pjd->reset_next))
+//                            printf("%04x: RESET? %02x\n", *bd.inpos,  marker_32);
+                            if (marker_32 != (0xd0 + pjd->reset_next))
                                 return PJPEG_ERR_RESET;
 
                             pjd->reset_count = 0;
                             pjd->reset_next = (pjd->reset_next + 1) & 0x7;
 
-                            memset(dcpred, 0, sizeof(dcpred));
+                            memset(dcpred, 0, sizeof(*dcpred));
                         }
 
                         for (int nsidx = 0; nsidx < ns; nsidx++) {
@@ -643,6 +648,9 @@ static int pjpeg_decode_buffer(struct pjpeg_decode_state *pjd)
 
                     }
                 }
+
+                free(dcpred);
+                free(comp_idx);
 
                 break;
             }
@@ -745,8 +753,8 @@ image_u8x3_t *pjpeg_to_u8x3_baseline(pjpeg_t *pj)
 
     if (Cr_factor_y == 1 && Cr_factor_x == 1 && Cb_factor_y == 1 && Cb_factor_x == 1) {
 
-        for (int y = 0; y < pj->height; y++) {
-            for (int x = 0; x < pj->width; x++) {
+        for (uint32_t y = 0; y < pj->height; y++) {
+            for (uint32_t x = 0; x < pj->width; x++) {
                 int32_t y_val  = Y->data[y*Y->stride + x] * 65536;
                 int32_t cb_val = Cb->data[y*Cb->stride + x] - 128;
                 int32_t cr_val = Cr->data[y*Cr->stride + x] - 128;
@@ -761,8 +769,8 @@ image_u8x3_t *pjpeg_to_u8x3_baseline(pjpeg_t *pj)
             }
         }
     } else if (Cb_factor_y == Cr_factor_y && Cb_factor_x == Cr_factor_x) {
-        for (int by = 0; by < pj->height / Cb_factor_y; by++) {
-            for (int bx = 0; bx < pj->width / Cb_factor_x; bx++) {
+        for (uint32_t by = 0; by < pj->height / Cb_factor_y; by++) {
+            for (uint32_t bx = 0; bx < pj->width / Cb_factor_x; bx++) {
 
                 int32_t cb_val = Cb->data[by*Cb->stride + bx] - 128;
                 int32_t cr_val = Cr->data[by*Cr->stride + bx] - 128;
@@ -792,8 +800,8 @@ image_u8x3_t *pjpeg_to_u8x3_baseline(pjpeg_t *pj)
         }
     } else {
 
-        for (int y = 0; y < pj->height; y++) {
-            for (int x = 0; x < pj->width; x++) {
+        for (uint32_t y = 0; y < pj->height; y++) {
+            for (uint32_t x = 0; x < pj->width; x++) {
                 int32_t y_val  = Y->data[y*Y->stride + x];
                 int32_t cb_val = Cb->data[(y / Cb_factor_y)*Cb->stride + (x / Cb_factor_x)] - 128;
                 int32_t cr_val = Cr->data[(y / Cr_factor_y)*Cr->stride + (x / Cr_factor_x)] - 128;
@@ -816,7 +824,7 @@ image_u8x3_t *pjpeg_to_u8x3_baseline(pjpeg_t *pj)
 // returns NULL if file loading fails.
 pjpeg_t *pjpeg_create_from_file(const char *path, uint32_t flags, int *error)
 {
-    FILE *f = fopen(path, "r");
+    FILE *f = fopen(path, "rb");
     if (f == NULL)
         return NULL;
 
@@ -826,6 +834,12 @@ pjpeg_t *pjpeg_create_from_file(const char *path, uint32_t flags, int *error)
     uint8_t *buf = malloc(buflen);
     fseek(f, 0, SEEK_SET);
     int res = fread(buf, 1, buflen, f);
+
+    if ( ferror(f) ){
+        debug_print ("Read failed");
+        clearerr(f);
+    }
+
     fclose(f);
     if (res != buflen) {
         free(buf);
@@ -850,6 +864,7 @@ pjpeg_t *pjpeg_create_from_buffer(uint8_t *buf, int buflen, uint32_t flags, int 
         pjd.inlen = sizeof(mjpeg_dht);
         int result = pjpeg_decode_buffer(&pjd);
         assert(result == 0);
+        (void)result;
     }
 
     pjd.in = buf;
