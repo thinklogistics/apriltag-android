@@ -1,19 +1,15 @@
 /* Copyright (C) 2013-2016, The Regents of The University of Michigan.
 All rights reserved.
-
 This software was developed in the APRIL Robotics Lab under the
 direction of Edwin Olson, ebolson@umich.edu. This software may be
 available under alternative licensing terms; contact the address above.
-
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
-
 1. Redistributions of source code must retain the above copyright notice, this
    list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -24,14 +20,12 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the Regents of The University of Michigan.
 */
 
-#ifndef _MATD_H
-#define _MATD_H
+#pragma once
 
 #include <assert.h>
 #include <stddef.h>
@@ -119,13 +113,13 @@ matd_t *matd_create_scalar(double v);
  * Retrieves the cell value for matrix 'm' at the given zero-based row and column index.
  * Performs more thorough validation checking than MATD_EL().
  */
-double matd_get(const matd_t *m, int row, int col);
+double matd_get(const matd_t *m, unsigned int row, unsigned int col);
 
 /**
  * Assigns the given value to the matrix cell at the given zero-based row and
  * column index. Performs more thorough validation checking than MATD_EL().
  */
-void matd_put(matd_t *m, int row, int col, double value);
+void matd_put(matd_t *m, unsigned int row, unsigned int col, double value);
 
 /**
  * Retrieves the scalar value of the given element ('m' must be a scalar).
@@ -153,7 +147,7 @@ matd_t *matd_copy(const matd_t *m);
  * beyond the number of rows/columns of 'a'. It is the caller's  responsibility to
  * call matd_destroy() on the returned matrix.
  */
-matd_t *matd_select(const matd_t *a, int r0, int r1, int c0, int c1);
+matd_t *matd_select(const matd_t *a, unsigned int r0, int r1, unsigned int c0, int c1);
 
 /**
  * Prints the supplied matrix 'm' to standard output by applying the supplied
@@ -256,7 +250,7 @@ static inline void matd_set_data(matd_t *m, const double *data)
 static inline int matd_is_scalar(const matd_t *a)
 {
     assert(a != NULL);
-    return a->ncols == 0 || a->nrows == 0;
+    return a->ncols <= 1 && a->nrows <= 1;
 }
 
 /**
@@ -277,7 +271,7 @@ static inline int matd_is_vector(const matd_t *a)
 static inline int matd_is_vector_len(const matd_t *a, int len)
 {
     assert(a != NULL);
-    return (a->ncols == 1 && a->nrows == len) || (a->ncols == len && a->nrows == 1);
+    return (a->ncols == 1 && a->nrows == (unsigned int)len) || (a->ncols == (unsigned int)len && a->nrows == 1);
 }
 
 /**
@@ -336,8 +330,8 @@ double matd_err_inf(const matd_t *a, const matd_t *b);
  * Available operators (in order of increasing precedence):
  *   M+M   add two matrices together
  *   M-M   subtract one matrix from another
- *   M*M   multiply to matrices together (matrix product)
- *   MM    multiply to matrices together (matrix product)
+ *   M*M   multiply two matrices together (matrix product)
+ *   MM    multiply two matrices together (matrix product)
  *   -M    negate a matrix
  *   M^-1  take the inverse of a matrix
  *   M'    take the transpose of a matrix
@@ -449,6 +443,4 @@ double matd_max(matd_t *m);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

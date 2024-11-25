@@ -1,19 +1,15 @@
 /* Copyright (C) 2013-2016, The Regents of The University of Michigan.
 All rights reserved.
-
 This software was developed in the APRIL Robotics Lab under the
 direction of Edwin Olson, ebolson@umich.edu. This software may be
 available under alternative licensing terms; contact the address above.
-
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
-
 1. Redistributions of source code must retain the above copyright notice, this
    list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -24,7 +20,6 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the Regents of The University of Michigan.
@@ -32,7 +27,6 @@ either expressed or implied, of the Regents of The University of Michigan.
 
 #include <assert.h>
 #include <ctype.h>
-#include <errno.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -44,7 +38,7 @@ either expressed or implied, of the Regents of The University of Michigan.
 struct string_buffer
 {
     char *s;
-    int alloc;
+    size_t alloc;
     size_t size; // as if strlen() was called; not counting terminating \0
 };
 
@@ -136,7 +130,7 @@ int str_diff_idx(const char * a, const char * b)
     assert(a != NULL);
     assert(b != NULL);
 
-    int i = 0;
+    size_t i = 0;
 
     size_t lena = strlen(a);
     size_t lenb = strlen(b);
@@ -207,10 +201,10 @@ zarray_t *str_split_spaces(const char *str)
 	pos++;
       size_t off1 = pos;
 
-      size_t len = off1 - off0;
-      char *tok = malloc(len + 1);
-      memcpy(tok, &str[off0], len);
-      tok[len] = 0;
+      size_t len_off = off1 - off0;
+      char *tok = malloc(len_off + 1);
+      memcpy(tok, &str[off0], len_off);
+      tok[len_off] = 0;
       zarray_add(parts, &tok);
     }
   }
@@ -299,7 +293,7 @@ char *str_tolowercase(char *s)
 	assert(s != NULL);
 
     size_t slen = strlen(s);
-    for (int i = 0; i < slen; i++) {
+    for (size_t i = 0; i < slen; i++) {
         if (s[i] >= 'A' && s[i] <= 'Z')
             s[i] = s[i] + 'a' - 'A';
     }
@@ -312,7 +306,7 @@ char *str_touppercase(char *s)
     assert(s != NULL);
 
     size_t slen = strlen(s);
-    for (int i = 0; i < slen; i++) {
+    for (size_t i = 0; i < slen; i++) {
         if (s[i] >= 'a' && s[i] <= 'z')
             s[i] = s[i] - ('a' - 'A');
     }
@@ -505,14 +499,13 @@ char string_feeder_next(string_feeder_t *sf)
 char *string_feeder_next_length(string_feeder_t *sf, size_t length)
 {
     assert(sf != NULL);
-    assert(length >= 0);
     assert(sf->pos <= sf->len);
 
     if (sf->pos + length > sf->len)
         length = sf->len - sf->pos;
 
     char *substr = calloc(length+1, sizeof(char));
-    for (int i = 0 ; i < length ; i++)
+    for (size_t i = 0 ; i < length ; i++)
         substr[i] = string_feeder_next(sf);
     return substr;
 }
@@ -528,7 +521,6 @@ char string_feeder_peek(string_feeder_t *sf)
 char *string_feeder_peek_length(string_feeder_t *sf, size_t length)
 {
     assert(sf != NULL);
-    assert(length >= 0);
     assert(sf->pos <= sf->len);
 
     if (sf->pos + length > sf->len)
@@ -556,9 +548,10 @@ void string_feeder_require(string_feeder_t *sf, const char *str)
 
     size_t len = strlen(str);
 
-    for (int i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         char c = string_feeder_next(sf);
         assert(c == str[i]);
+        (void)c;
     }
 }
 
@@ -577,7 +570,10 @@ bool str_ends_with(const char *haystack, const char *needle)
     return !strncmp(&haystack[lens - lenneedle], needle, lenneedle);
 }
 
-inline bool str_starts_with(const char *haystack, const char *needle)
+#ifndef _MSC_VER
+inline
+#endif
+bool str_starts_with(const char *haystack, const char *needle)
 {
     assert(haystack != NULL);
     assert(needle != NULL);
@@ -623,15 +619,12 @@ bool str_matches_any(const char *haystack, const char **needles, int num_needles
     return false;
 }
 
-char *str_substring(const char *str, size_t startidx, long endidx)
+char *str_substring(const char *str, size_t startidx, size_t endidx)
 {
     assert(str != NULL);
-    assert(startidx >= 0 && startidx <= strlen(str)+1);
-    assert(endidx < 0 || endidx >= startidx);
-    assert(endidx < 0 || endidx <= strlen(str)+1);
-
-    if (endidx < 0)
-        endidx = (long) strlen(str);
+    assert(startidx <= strlen(str)+1);
+    assert(endidx >= startidx);
+    assert(endidx <= strlen(str)+1);
 
     size_t blen = endidx - startidx; // not counting \0
     char *b = malloc(blen + 1);
@@ -650,7 +643,7 @@ char *str_replace(const char *haystack, const char *needle, const char *replacem
     size_t haystack_len = strlen(haystack);
     size_t needle_len = strlen(needle);
 
-    int pos = 0;
+    size_t pos = 0;
     while (pos < haystack_len) {
         if (needle_len > 0 && str_starts_with(&haystack[pos], needle)) {
             string_buffer_append_string(sb, replacement);
@@ -757,7 +750,7 @@ char *str_expand_envs(const char *in)
             char *varname = NULL;
             int  varnamepos = 0;
 
-            while (varnamepos < sizeof(varname) && inpos < inlen && is_variable_character(in[inpos])) {
+            while (inpos < inlen && is_variable_character(in[inpos])) {
                 buffer_appendf(&varname, &varnamepos, "%c", in[inpos]);
                 inpos++;
             }

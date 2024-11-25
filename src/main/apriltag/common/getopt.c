@@ -1,19 +1,15 @@
 /* Copyright (C) 2013-2016, The Regents of The University of Michigan.
 All rights reserved.
-
 This software was developed in the APRIL Robotics Lab under the
 direction of Edwin Olson, ebolson@umich.edu. This software may be
 available under alternative licensing terms; contact the address above.
-
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
-
 1. Redistributions of source code must retain the above copyright notice, this
    list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
-
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -24,7 +20,6 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 The views and conclusions contained in the software and documentation are those
 of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the Regents of The University of Michigan.
@@ -91,6 +86,11 @@ void getopt_option_destroy(getopt_option_t *goo)
     free(goo);
 }
 
+void getopt_option_destroy_void(void *goo)
+{
+    getopt_option_destroy((getopt_option_t *)goo);
+}
+
 void getopt_destroy(getopt_t *gopt)
 {
     // free the extra arguments and container
@@ -99,7 +99,7 @@ void getopt_destroy(getopt_t *gopt)
 
     // deep free of the getopt_option structs. Also frees key/values, so
     // after this loop, hash tables will no longer work
-    zarray_vmap(gopt->options, getopt_option_destroy);
+    zarray_vmap(gopt->options, getopt_option_destroy_void);
     zarray_destroy(gopt->options);
 
     // free tables
@@ -181,7 +181,7 @@ int getopt_parse(getopt_t *gopt, int argc, char *argv[], int showErrors)
     }
 
     // now loop over the elements and evaluate the arguments
-    unsigned int i = 0;
+    int i = 0;
 
     char *tok = NULL;
 
@@ -246,7 +246,7 @@ int getopt_parse(getopt_t *gopt, int argc, char *argv[], int showErrors)
 
         if (!strncmp(tok,"-",1) && strncmp(tok,"--",2)) {
             size_t len = strlen(tok);
-            int pos;
+            size_t pos;
             for (pos = 1; pos < len; pos++) {
                 char sopt[2];
                 sopt[0] = tok[pos];
@@ -504,20 +504,20 @@ char * getopt_get_usage(getopt_t *gopt)
     int longwidth=12;
     int valuewidth=10;
 
-    for (unsigned int i = 0; i < zarray_size(gopt->options); i++) {
+    for (int i = 0; i < zarray_size(gopt->options); i++) {
         getopt_option_t *goo = NULL;
         zarray_get(gopt->options, i, &goo);
 
         if (goo->spacer)
             continue;
 
-        longwidth = max(longwidth, (int) strlen(goo->lname));
+        longwidth = imax(longwidth, (int) strlen(goo->lname));
 
         if (goo->type == GOO_STRING_TYPE)
-            valuewidth = max(valuewidth, (int) strlen(goo->svalue));
+            valuewidth = imax(valuewidth, (int) strlen(goo->svalue));
     }
 
-    for (unsigned int i = 0; i < zarray_size(gopt->options); i++) {
+    for (int i = 0; i < zarray_size(gopt->options); i++) {
         getopt_option_t *goo = NULL;
         zarray_get(gopt->options, i, &goo);
 
