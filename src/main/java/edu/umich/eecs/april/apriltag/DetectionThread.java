@@ -179,8 +179,79 @@ public class DetectionThread extends Thread {
         Canvas canvas = mTextureView.lockCanvas();
         try {
             canvas.drawColor(0, PorterDuff.Mode.CLEAR);
-            for (ApriltagDetection detection : detections) {
-                renderDetection(detection, canvas);
+
+            if (!detections.isEmpty()) {
+                float scaleDetectionY = (float)(canvas.getWidth()) / mCameraSize.height; // Converts detection y to render x (still needs offset)
+
+                //array that contains newly generated apriltags (adjacent tags)
+                ArrayList<ApriltagDetection> adjacentApriltags = new ArrayList<>();
+
+                //performed apriltags,
+                ArrayList<ApriltagDetection> performedApriltags = new ArrayList<>();
+
+                for (ApriltagDetection detection: detections) {
+                    if (performedApriltags.contains(detection)) {
+                        continue;
+                    }
+
+                    //find adjacent apriltags
+                    for (ApriltagDetection adjacentDetection: detections) {
+                        if (adjacentDetection.equals(detection)) {
+                            continue;
+                        }
+
+                        //distance between 2 april tags (can be from center id)
+                        double distance = Math.sqrt(Math.pow(detection.c[0] - adjacentDetection.c[0], 2) + Math.pow(detection.c[1] - adjacentDetection.c[1], 2));
+                        double width = Math.sqrt(Math.pow(detection.p[0] - detection.p[2], 2) + Math.pow(detection.p[1] - detection.p[3], 2));
+
+                        if (distance < width * 3 / 2) {
+                            //these are adjacent tags, both detection and adjacentDetection tags will be added to performed tags array.
+                            performedApriltags.add(adjacentDetection);
+
+                            //generate new apriltag and draw
+                            ApriltagDetection newDetection = new ApriltagDetection();
+
+                            //define major and minor apriltags based on x coordinates and y-axis rotation angle
+                            float xPointsCanvasDetection = (float) (canvas.getWidth() - detection.p[1] * scaleDetectionY);
+                            float xPointsCanvasAdjacentDetection = (float) (canvas.getWidth() - adjacentDetection.p[1] * scaleDetectionY);
+
+                            ApriltagDetection major;
+                            //we have to give some thresold in angles, when camera is rotated in other angle range, these tags will be marked as error tags,
+                            //and will not be drawn, can't detect major and minor without thresold.
+                            if (detection.getRoll() > 200 && detection.getRoll() < 340) {
+                                major = (xPointsCanvasDetection < xPointsCanvasAdjacentDetection) ? detection : adjacentDetection;
+                            }else if (detection.getRoll() > 20 && detection.getRoll() < 160) {
+                                major = (xPointsCanvasDetection < xPointsCanvasAdjacentDetection) ? adjacentDetection : detection;
+                            }else {
+                                continue;
+                            }
+
+                            ApriltagDetection minor = major == detection ? adjacentDetection : detection;
+
+                            //major and minor tag is detected,
+                            //we have to generate new tag info to draw, generate new combined id, and coordinates.
+                            newDetection.id = major.id * 587 + minor.id;
+                            newDetection.c[0] = (adjacentDetection.c[0] + detection.c[0]) / 2;
+                            newDetection.c[1] = (adjacentDetection.c[1] + detection.c[1]) / 2;
+
+                            newDetection.p[0] = major.p[0];
+                            newDetection.p[1] = major.p[1];
+                            newDetection.p[2] = minor.p[2];
+                            newDetection.p[3] = minor.p[3];
+                            newDetection.p[4] = minor.p[4];
+                            newDetection.p[5] = minor.p[5];
+                            newDetection.p[6] = major.p[6];
+                            newDetection.p[7] = major.p[7];
+                            adjacentApriltags.add(newDetection);
+                        }
+                    }
+
+                    performedApriltags.add(detection);
+                }
+                for (ApriltagDetection detection : adjacentApriltags) {
+                    //draw adjacent tags.
+                    renderDetection(detection, canvas);
+                }
             }
         } catch (Exception e) {
             Log.e(TAG, "Error rendering detections: " + e.getMessage());
@@ -213,6 +284,7 @@ public class DetectionThread extends Thread {
             }
 
             ArrayList<ApriltagDetection> detections = processCameraFrame(data, mCameraSize);
+
             renderDetections(detections);
 
             mLastDetectLatency = (System.currentTimeMillis() - mLastEnqueueFrameTime);

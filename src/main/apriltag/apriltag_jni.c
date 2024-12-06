@@ -2,6 +2,7 @@
 
 #include <android/bitmap.h>
 #include <android/log.h>
+#include <tgmath.h>
 
 #include "apriltag.h"
 #include "tag16h5.h"
@@ -14,6 +15,7 @@
 #include "tagCustom48h12.h"
 #include "tagStandard41h12.h"
 #include "tagStandard52h13.h"
+#include "apriltag_pose.h"
 
 static struct {
     apriltag_detector_t *td;
@@ -24,7 +26,7 @@ static struct {
     jmethodID al_constructor, al_add;
     jclass ad_cls;
     jmethodID ad_constructor;
-    jfieldID ad_id_field, ad_hamming_field, ad_c_field, ad_p_field;
+    jfieldID ad_id_field, ad_hamming_field, ad_c_field, ad_p_field, ad_pose_field; //add new field to calculate pose and pass.
 } state;
 
 JNIEXPORT void JNICALL Java_edu_umich_eecs_april_apriltag_ApriltagNative_native_1init
@@ -69,6 +71,8 @@ JNIEXPORT void JNICALL Java_edu_umich_eecs_april_apriltag_ApriltagNative_native_
     state.ad_hamming_field = (*env)->GetFieldID(env, ad_cls, "hamming", "I");
     state.ad_c_field = (*env)->GetFieldID(env, ad_cls, "c", "[D");
     state.ad_p_field = (*env)->GetFieldID(env, ad_cls, "p", "[D");
+    state.ad_pose_field = (*env)->GetFieldID(env, ad_cls, "pose", "[D");
+
     if (!state.ad_id_field ||
             !state.ad_hamming_field ||
             !state.ad_c_field ||
@@ -247,6 +251,20 @@ JNIEXPORT jobject JNICALL Java_edu_umich_eecs_april_apriltag_ApriltagNative_apri
         apriltag_detection_t *det;
         zarray_get(detections, i, &det);
 
+        //pose detection
+        apriltag_detection_info_t info;
+        info.det = det;
+        info.tagsize = 0.06; //real tag size in meter, we assume 6cm
+        info.fx = width;
+        info.fy = height;
+        info.cx = width/2;
+        info.cy = height/2;
+
+        apriltag_pose_t pose;
+
+        //calculate pose
+        estimate_tag_pose(&info, &pose);
+
         // ad = new ApriltagDetection();
         jobject ad = (*env)->NewObject(env, state.ad_cls, state.ad_constructor);
         (*env)->SetIntField(env, ad, state.ad_id_field, det->id);
@@ -255,6 +273,10 @@ JNIEXPORT jobject JNICALL Java_edu_umich_eecs_april_apriltag_ApriltagNative_apri
         (*env)->SetDoubleArrayRegion(env, ad_c, 0, 2, det->c);
         jdoubleArray ad_p = (*env)->GetObjectField(env, ad, state.ad_p_field);
         (*env)->SetDoubleArrayRegion(env, ad_p, 0, 8, (double*)det->p);
+
+        //pass pose info as array
+        jdoubleArray ad_pose = (*env)->GetObjectField(env, ad, state.ad_pose_field);
+        (*env)->SetDoubleArrayRegion(env, ad_pose, 0, 9, (double *)pose.R->data);
 
         // al.add(ad);
         (*env)->CallBooleanMethod(env, al, state.al_add, ad);
